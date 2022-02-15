@@ -4,6 +4,7 @@ from django.db.models import Q
 from django.db.models import CharField, Value, Count
 from django.core import serializers
 from rest_framework import viewsets
+from rest_framework.exceptions import APIException
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -20,12 +21,16 @@ from recon_note.models import *
 
 from reNgine.common_func import is_safe_path
 
+# ENDPOINT: {domain}/api/vulnerability/report/?vulnerability_id=<id:int>
 class VulnerabilityReport(APIView):
     def get(self, request):
         req = self.request
         vulnerability_id = req.query_params.get('vulnerability_id')
-        return Response({"status": send_hackerone_report(vulnerability_id)})
+        if vulnerability_id is None:
+            return Response({"status": send_hackerone_report(vulnerability_id)})
+        raise APIException({"error": "`scan_id` not found in params"})
 
+# ENDPOINT: {domain}/api/getFileContents/
 class GetFileContents(APIView):
     def get(self, request, format=None):
         req = self.request
@@ -80,7 +85,7 @@ class GetFileContents(APIView):
 
         return Response({'content': "ping-pong"})
 
-
+# ENDPOINT: {domain}/api/listTodoNotes/
 class ListTodoNotes(APIView):
     def get(self, request, format=None):
         req = self.request
@@ -100,7 +105,7 @@ class ListTodoNotes(APIView):
         notes = ReconNoteSerializer(notes, many=True)
         return Response({'notes': notes.data})
 
-
+# ENDPOINT: {domain}/api/listScanHistory/
 class ListScanHistory(APIView):
     def get(self, request, format=None):
         req = self.request
@@ -108,7 +113,7 @@ class ListScanHistory(APIView):
         scan_history = ScanHistorySerializer(scan_history, many=True)
         return Response({'scan_histories': scan_history.data})
 
-
+# ENDPOINT: {domain}/api/listEngines/
 class ListEngines(APIView):
     def get(self, request, format=None):
         req = self.request
@@ -116,7 +121,7 @@ class ListEngines(APIView):
         engine_serializer = EngineSerializer(engine, many=True)
         return Response({'engines': engine_serializer.data})
 
-
+# ENDPOINT: {domain}/api/listOrganizations/
 class ListOrganizations(APIView):
     def get(self, request, format=None):
         req = self.request
@@ -124,18 +129,20 @@ class ListOrganizations(APIView):
         organization_serializer = OrganizationSerializer(organizations, many=True)
         return Response({'organizations': organization_serializer.data})
 
-
+# ENDPOINT: {domain}/api/queryTargetsInOrganization/
 class ListTargetsInOrganization(APIView):
     def get(self, request, format=None):
         req = self.request
         organization_id = req.query_params.get('organization_id')
+        if organization_id is None:
+            raise APIException({"error": "`organization_id` not found in params"})
         organization = Organization.objects.filter(id=organization_id)
         targets = Domain.objects.filter(domains__in=organization)
         organization_serializer = OrganizationSerializer(organization, many=True)
         targets_serializer = OrganizationTargetsSerializer(targets, many=True)
         return Response({'organization': organization_serializer.data, 'domains': targets_serializer.data})
 
-
+# ENDPOINT: {domain}/api/queryTargetsWithoutOrganization/
 class ListTargetsWithoutOrganization(APIView):
     def get(self, request, format=None):
         req = self.request
@@ -143,7 +150,7 @@ class ListTargetsWithoutOrganization(APIView):
         targets_serializer = OrganizationTargetsSerializer(targets, many=True)
         return Response({'domains': targets_serializer.data})
 
-
+# ENDPOINT: {domain}/api/queryVulnerabilities/
 class ListVulnerability(APIView):
     def get(self, request, format=None):
         req = self.request
@@ -165,7 +172,7 @@ class ListVulnerability(APIView):
         vulnerability_serializer = VulnerabilitySerializer(vulnerability, many=True)
         return Response({'vulnerabilities': vulnerability_serializer.data})
 
-
+# ENDPOINT: {domain}/api/queryEndpoints/
 class ListEndpoints(APIView):
     def get(self, request, format=None):
         req = self.request
@@ -192,7 +199,7 @@ class ListEndpoints(APIView):
 
         return Response({'endpoints': endpoints_serializer.data})
 
-
+# ENDPOINT: {domain}/api/queryAllScanResultVisualise/
 class VisualiseData(APIView):
     def get(self, request, format=None):
         req = self.request
@@ -201,10 +208,9 @@ class VisualiseData(APIView):
             mitch_data = ScanHistory.objects.filter(id=scan_id)
             serializer = VisualiseDataSerializer(mitch_data, many=True)
             return Response(serializer.data)
-        else:
-            return Response()
+        raise APIException({"error": "`scan_id` not found in params"})
 
-
+# ENDPOINT: {domain}/api/queryTechnologies/
 class ListTechnology(APIView):
     def get(self, request, format=None):
         req = self.request
@@ -232,7 +238,7 @@ class ListTechnology(APIView):
             serializer = TechnologyCountSerializer(tech, many=True)
             return Response({"technologies": serializer.data})
 
-
+# ENDPOINT: {domain} /api/queryDorkTypes/
 class ListDorkTypes(APIView):
     def get(self, request, format=None):
         req = self.request
@@ -250,7 +256,7 @@ class ListDorkTypes(APIView):
             serializer = DorkCountSerializer(dork, many=True)
             return Response({"dorks": serializer.data})
 
-
+# ENDPOINT: {domain} /api/queryEmails/?scan_id=1
 class ListEmails(APIView):
     def get(self, request, format=None):
         req = self.request
@@ -260,8 +266,9 @@ class ListEmails(APIView):
                 emails__in=ScanHistory.objects.filter(id=scan_id)).order_by('password')
             serializer = EmailSerializer(email, many=True)
             return Response({"emails": serializer.data})
+        raise APIException({"error": "`scan_id` not found in params"})
 
-
+# ENDPOINT: {domain} /api/queryDorks/
 class ListDorks(APIView):
     def get(self, request, format=None):
         req = self.request
@@ -278,7 +285,7 @@ class ListDorks(APIView):
         serializer = DorkSerializer(dork, many=True)
         return Response({"dorks": serializer.data})
 
-
+# ENDPOINT: {domain} /api/queryEmployees/?scan_id=1
 class ListEmployees(APIView):
     def get(self, request, format=None):
         req = self.request
@@ -288,8 +295,9 @@ class ListEmployees(APIView):
                 employees__in=ScanHistory.objects.filter(id=scan_id))
             serializer = EmployeeSerializer(employee, many=True)
             return Response({"employees": serializer.data})
+        raise APIException({"error": "`scan_id` not found in params"})
 
-
+# ENDPOINT: {domain}/api/queryPorts/
 class ListPorts(APIView):
     def get(self, request, format=None):
         req = self.request
@@ -318,7 +326,7 @@ class ListPorts(APIView):
         serializer = PortSerializer(port, many=True)
         return Response({"ports": serializer.data})
 
-
+# ENDPOINT: {domain}/api/querySubdomains/
 class ListSubdomains(APIView):
     def get(self, request, format=None):
         req = self.request
@@ -357,6 +365,7 @@ class ListSubdomains(APIView):
             serializer = SubdomainSerializer(subdomain_query, many=True)
         return Response({"subdomains": serializer.data})
 
+# ENDPOINT: {domain} /api/queryOsintUsers/?scan_id=1
 class ListOsintUsers(APIView):
     def get(self, request, format=None):
         req = self.request
@@ -365,8 +374,9 @@ class ListOsintUsers(APIView):
             documents = MetaFinderDocument.objects.filter(scan_history__id=scan_id).exclude(author__isnull=True).values('author').distinct()
             serializer = MetafinderUserSerializer(documents, many=True)
             return Response({"users": serializer.data})
+        raise APIException({"error": "`scan_id` not found in params"})
 
-
+# ENDPOINT: {domain} /api/queryMetadata/?scan_id=1
 class ListMetadata(APIView):
     def get(self, request, format=None):
         req = self.request
@@ -375,8 +385,9 @@ class ListMetadata(APIView):
             documents = MetaFinderDocument.objects.filter(scan_history__id=scan_id).distinct()
             serializer = MetafinderDocumentSerializer(documents, many=True)
             return Response({"metadata": serializer.data})
+        raise APIException({"error": "`scan_id` not found in params"})
 
-
+# ENDPOINT: {domain}/api/queryIps/
 class ListIPs(APIView):
     def get(self, request, format=None):
         req = self.request
@@ -421,7 +432,7 @@ class IpAddressViewSet(viewsets.ModelViewSet):
                 ip_addresses__isnull=True).distinct()
         else:
             self.serializer_class = IpSerializer
-            self.queryset = Ip.objects.all()
+            self.queryset = IpAddress.objects.all()
         return self.queryset
 
     def paginate_queryset(self, queryset, view=None):
@@ -429,7 +440,6 @@ class IpAddressViewSet(viewsets.ModelViewSet):
             return None
         return self.paginator.paginate_queryset(
             queryset, self.request, view=self)
-
 
 class SubdomainsViewSet(viewsets.ModelViewSet):
     queryset = Subdomain.objects.none()
@@ -450,7 +460,6 @@ class SubdomainsViewSet(viewsets.ModelViewSet):
             return None
         return self.paginator.paginate_queryset(
             queryset, self.request, view=self)
-
 
 class SubdomainChangesViewSet(viewsets.ModelViewSet):
     '''
@@ -517,7 +526,6 @@ class SubdomainChangesViewSet(viewsets.ModelViewSet):
         return self.paginator.paginate_queryset(
             queryset, self.request, view=self)
 
-
 class EndPointChangesViewSet(viewsets.ModelViewSet):
     '''
         This viewset will return the EndPoint changes
@@ -527,8 +535,11 @@ class EndPointChangesViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         req = self.request
-        scan_id = req.query_params.get('scan_id')
-        changes = req.query_params.get('changes')
+        scan_id = req.query_params.get('scan_id', None)
+        changes = req.query_params.get('changes', None)
+
+        if scan_id is None and changes is None:
+            raise APIException({'error': 'Scan Id and Changes not not provided.'})
 
         domain_id = ScanHistory.objects.filter(id=scan_id)[0].domain.id
         scan_history = ScanHistory.objects.filter(
@@ -581,7 +592,6 @@ class EndPointChangesViewSet(viewsets.ModelViewSet):
         return self.paginator.paginate_queryset(
             queryset, self.request, view=self)
 
-
 class InterestingSubdomainViewSet(viewsets.ModelViewSet):
     queryset = Subdomain.objects.none()
     serializer_class = SubdomainSerializer
@@ -607,7 +617,6 @@ class InterestingSubdomainViewSet(viewsets.ModelViewSet):
         return self.paginator.paginate_queryset(
             queryset, self.request, view=self)
 
-
 class InterestingEndpointViewSet(viewsets.ModelViewSet):
     queryset = EndPoint.objects.none()
     serializer_class = EndpointSerializer
@@ -630,7 +639,6 @@ class InterestingEndpointViewSet(viewsets.ModelViewSet):
             return None
         return self.paginator.paginate_queryset(
             queryset, self.request, view=self)
-
 
 class SubdomainDatatableViewSet(viewsets.ModelViewSet):
     queryset = Subdomain.objects.none()
@@ -848,7 +856,6 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 
         return qs
 
-
 class EndPointViewSet(viewsets.ModelViewSet):
     queryset = EndPoint.objects.none()
     serializer_class = EndpointSerializer
@@ -1040,7 +1047,6 @@ class EndPointViewSet(viewsets.ModelViewSet):
                     print(e)
         return qs
 
-
 class VulnerabilityViewSet(viewsets.ModelViewSet):
     queryset = Vulnerability.objects.none()
     serializer_class = VulnerabilitySerializer
@@ -1079,11 +1085,10 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 
     def filter_queryset(self, qs):
         qs = self.queryset.filter()
-        search_value = self.request.GET.get(u'search[value]', None)
+        search_value = self.request.GET.get(u'search[value]', "")
         _order_col = self.request.GET.get(u'order[0][column]', None)
         _order_direction = self.request.GET.get(u'order[0][dir]', None)
         order_col = 'severity'
-        print(_order_col)
         if _order_col == '0' or _order_col == '5':
             order_col = 'open_status'
         elif _order_col == '1':
@@ -1094,6 +1099,7 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
             order_col = 'http_url'
         if _order_direction == 'desc':
             order_col = '-{}'.format(order_col)
+        print(_order_col)
         # if the search query is separated by = means, it is a specific lookup
         # divide the search query into two half and lookup
         if '=' in search_value or '&' in search_value or '|' in search_value or '>' in search_value or '<' in search_value or '!' in search_value:
