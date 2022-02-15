@@ -171,7 +171,7 @@ $(document).ready(function() {
 					}
 					if (row['tags']) {
 						var badge = "<span class='badge badge-pill outline-badge-"+color+" m-1'>";
-						row['tags'].split(/\s*,\s*/).forEach(function(split_vals) {
+						row['tags'].replace(/^\[/, '').replace(/\]$/, '').split(/\s*,\s*/).forEach(function(split_vals) {
 							tags_span+=badge + split_vals + "</span>";
 						});
 					}
