@@ -3,8 +3,34 @@ from django.db import models
 from django.utils import timezone
 from django.apps import apps
 
+from django.contrib.auth import get_user_model
 
-class Organization(models.Model):
+from .middleware import local
+NULL_AND_BLANK = {'null': True, 'blank': True}
+
+
+class ModelManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(creator=local.user)
+
+class BaseModel(models.Model):
+    created = models.DateTimeField(default=timezone.now)
+    modified = models.DateTimeField(default=timezone.now)
+    creator = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, **NULL_AND_BLANK)
+
+    objects = ModelManager()
+
+    def save(self, *args, **kwargs):
+        if self.pk is None and hasattr(local, 'user'):
+            self.creator = local.user
+            # self.created = timezone.now()
+            # self.modified = timezone.now()
+        return super(BaseModel, self).save(*args, **kwargs)
+
+    class Meta:
+        abstract = True
+
+class Organization(BaseModel):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=300, unique=True)
     description = models.TextField(blank=True, null=True)
@@ -18,7 +44,7 @@ class Organization(models.Model):
         return Domain.objects.filter(domains__in=Organization.objects.filter(id=self.id))
 
 
-class Domain(models.Model):
+class Domain(BaseModel):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=300, unique=True)
     h1_team_handle = models.CharField(max_length=100, blank=True, null=True)
@@ -33,7 +59,7 @@ class Domain(models.Model):
         ScanHistory = apps.get_model('startScan.ScanHistory')
         obj = ScanHistory.objects.filter(domain__id=self.id).order_by('-id')
         if obj:
-	          return obj[0].id
+            return obj[0].id
 
     def __str__(self):
         return self.name
