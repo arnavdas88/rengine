@@ -524,7 +524,11 @@ class SubdomainChangesViewSet(viewsets.ModelViewSet):
         scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all())
         subdomain = Subdomain.objects.filter(scan_history__in=scan_history)
 
-        domain_id = scan_history.filter(id=scan_id)[0].domain.id
+        domain = scan_history.filter(id=scan_id).last()
+        if domain is None:
+            raise APIException({'details': 'You cannot access this data'})
+        domain_id = domain.domain.id
+
         scan_history = scan_history.filter(
             domain=domain_id).filter(
             subdomain_discovery=True).filter(
@@ -592,7 +596,10 @@ class EndPointChangesViewSet(viewsets.ModelViewSet):
         
         scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all())
 
-        domain_id = scan_history.filter(id=scan_id)[0].domain.id
+        domain = scan_history.filter(id=scan_id).last()
+        if domain is None:
+            raise APIException({'details': 'You cannot access this data'})
+        domain_id = domain.domain.id
         scan_history = scan_history.filter(
             domain=domain_id).filter(
             fetch_url=True).filter(

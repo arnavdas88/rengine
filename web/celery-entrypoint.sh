@@ -11,7 +11,14 @@ then
     echo "PostgreSQL started"
 fi
 
+
+# sudo rm -r web/targetApp/migrations
+# sudo rm -r web/startScan/migrations
+# sudo rm -r web/scanEngine/migrations
+# sudo rm -r web/recon_note/migrations
+
 python3 manage.py makemigrations
+python3 manage.py makemigrations targetApp startScan scanEngine recon_note
 python3 manage.py migrate
 python3 manage.py collectstatic --no-input --clear
 
