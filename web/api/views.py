@@ -89,7 +89,8 @@ class GetFileContents(APIView):
 class ListTodoNotes(APIView):
     def get(self, request, format=None):
         req = self.request
-        notes = TodoNote.objects.all().order_by('-id')
+        scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all())
+        notes = TodoNote.objects.filter(scan_history__in=scan_history).order_by('-id')
         scan_id = req.query_params.get('scan_id')
         target_id = req.query_params.get('target_id')
         todo_id = req.query_params.get('todo_id')
@@ -109,7 +110,7 @@ class ListTodoNotes(APIView):
 class ListScanHistory(APIView):
     def get(self, request, format=None):
         req = self.request
-        scan_history = ScanHistory.objects.all().order_by('-start_scan_date')
+        scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all()).order_by('-start_scan_date')
         scan_history = ScanHistorySerializer(scan_history, many=True)
         return Response({'scan_histories': scan_history.data})
 
@@ -158,10 +159,13 @@ class ListVulnerability(APIView):
         severity = req.query_params.get('severity')
         subdomain_name = req.query_params.get('subdomain_name')
 
+        scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all()).order_by('-start_scan_date')
+
+        vulnerability = Vulnerability.objects.filter(scan_history__in=scan_history)
         if scan_id:
-            vulnerability = Vulnerability.objects.filter(scan_history__id=scan_id)
+            vulnerability = vulnerability.filter(scan_history__id=scan_id)
         else:
-            vulnerability = Vulnerability.objects.all()
+            vulnerability = vulnerability.all()
 
         if severity:
             vulnerability = vulnerability.filter(severity=severity)
@@ -180,10 +184,14 @@ class ListEndpoints(APIView):
         subdomain_name = req.query_params.get('subdomain_name')
         pattern = req.query_params.get('pattern')
 
+        scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all()).order_by('-start_scan_date')
+        endpoints = EndPoint.objects.filter(scan_history__in=scan_history)
+
+
         if scan_id:
-            endpoints = EndPoint.objects.filter(scan_history__id=scan_id)
+            endpoints = endpoints.filter(scan_history__id=scan_id)
         else:
-            endpoints = EndPoint.objects.all()
+            endpoints = endpoints.all()
 
         if subdomain_name:
             endpoints = endpoints.filter(subdomain__name=subdomain_name)
@@ -205,7 +213,8 @@ class VisualiseData(APIView):
         req = self.request
         scan_id = req.query_params.get('scan_id')
         if scan_id:
-            mitch_data = ScanHistory.objects.filter(id=scan_id)
+            scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all()).order_by('-start_scan_date')
+            mitch_data = scan_history.filter(id=scan_id)
             serializer = VisualiseDataSerializer(mitch_data, many=True)
             return Response(serializer.data)
         raise APIException({"error": "`scan_id` not found in params"})
@@ -217,22 +226,27 @@ class ListTechnology(APIView):
         scan_id = req.query_params.get('scan_id')
         target_id = req.query_params.get('target_id')
 
+        scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all()).order_by('-start_scan_date')
+        tech = Technology.objects.filter(
+                technologies__in=Subdomain.objects.filter(
+                    scan_history__in=scan_history))
+
         if target_id:
-            tech = Technology.objects.filter(
+            tech = tech.filter(
                 technologies__in=Subdomain.objects.filter(
                     target_domain__id=target_id)).annotate(
                 count=Count('name')).order_by('-count')
             serializer = TechnologyCountSerializer(tech, many=True)
             return Response({"technologies": serializer.data})
         elif scan_id:
-            tech = Technology.objects.filter(
+            tech = tech.filter(
                 technologies__in=Subdomain.objects.filter(
                     scan_history__id=scan_id)).annotate(
                 count=Count('name')).order_by('-count')
             serializer = TechnologyCountSerializer(tech, many=True)
             return Response({"technologies": serializer.data})
         else:
-            tech = Technology.objects.filter(
+            tech = tech.filter(
                 technologies__in=Subdomain.objects.all()).annotate(
                 count=Count('name')).order_by('-count')
             serializer = TechnologyCountSerializer(tech, many=True)
@@ -243,15 +257,17 @@ class ListDorkTypes(APIView):
     def get(self, request, format=None):
         req = self.request
         scan_id = req.query_params.get('scan_id')
+        scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all())
+
         if scan_id:
             dork = Dork.objects.filter(
-                dorks__in=ScanHistory.objects.filter(id=scan_id)
+                dorks__in=scan_history.filter(id=scan_id)
             ).values('type').annotate(count=Count('type')).order_by('-count')
             serializer = DorkCountSerializer(dork, many=True)
             return Response({"dorks": serializer.data})
         else:
             dork = Dork.objects.filter(
-                dorks__in=ScanHistory.objects.all()
+                dorks__in=scan_history.all()
             ).values('type').annotate(count=Count('type')).order_by('-count')
             serializer = DorkCountSerializer(dork, many=True)
             return Response({"dorks": serializer.data})
@@ -261,9 +277,11 @@ class ListEmails(APIView):
     def get(self, request, format=None):
         req = self.request
         scan_id = req.query_params.get('scan_id')
+        scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all())
+
         if scan_id:
             email = Email.objects.filter(
-                emails__in=ScanHistory.objects.filter(id=scan_id)).order_by('password')
+                emails__in=scan_history.filter(id=scan_id)).order_by('password')
             serializer = EmailSerializer(email, many=True)
             return Response({"emails": serializer.data})
         raise APIException({"error": "`scan_id` not found in params"})
@@ -274,12 +292,14 @@ class ListDorks(APIView):
         req = self.request
         scan_id = req.query_params.get('scan_id')
         type = req.query_params.get('type')
+        scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all())
+
         if scan_id:
             dork = Dork.objects.filter(
-                dorks__in=ScanHistory.objects.filter(id=scan_id))
+                dorks__in=scan_history.filter(id=scan_id))
         else:
             dork = Dork.objects.filter(
-                dorks__in=ScanHistory.objects.all())
+                dorks__in=scan_history.all())
         if scan_id and type:
             dork = dork.filter(type=type)
         serializer = DorkSerializer(dork, many=True)
@@ -290,9 +310,11 @@ class ListEmployees(APIView):
     def get(self, request, format=None):
         req = self.request
         scan_id = req.query_params.get('scan_id')
+        scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all())
+
         if scan_id:
             employee = Employee.objects.filter(
-                employees__in=ScanHistory.objects.filter(id=scan_id))
+                employees__in=scan_history.filter(id=scan_id))
             serializer = EmployeeSerializer(employee, many=True)
             return Response({"employees": serializer.data})
         raise APIException({"error": "`scan_id` not found in params"})
@@ -304,21 +326,23 @@ class ListPorts(APIView):
         scan_id = req.query_params.get('scan_id')
         target_id = req.query_params.get('target_id')
         ip_address = req.query_params.get('ip_address')
+        scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all())
+        subdomain = Subdomain.objects.filter(scan_history__in=scan_history)
 
         if target_id:
             port = Port.objects.filter(
                 ports__in=IpAddress.objects.filter(
-                    ip_addresses__in=Subdomain.objects.filter(
+                    ip_addresses__in=subdomain.filter(
                         target_domain__id=target_id))).distinct()
         elif scan_id:
             port = Port.objects.filter(
                 ports__in=IpAddress.objects.filter(
-                    ip_addresses__in=Subdomain.objects.filter(
+                    ip_addresses__in=subdomain.filter(
                         scan_history__id=scan_id))).distinct()
         else:
             port = Port.objects.filter(
                 ports__in=IpAddress.objects.filter(
-                    ip_addresses__in=Subdomain.objects.all())).distinct()
+                    ip_addresses__in=subdomain.all())).distinct()
 
         if ip_address:
             port = port.filter(ports__address=ip_address).distinct()
@@ -336,12 +360,15 @@ class ListSubdomains(APIView):
         port = req.query_params.get('port')
         tech = req.query_params.get('tech')
 
+        scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all())
+        subdomain = Subdomain.objects.filter(scan_history__in=scan_history)
+
         if scan_id:
-            subdomain_query = Subdomain.objects.filter(scan_history__id=scan_id).distinct('name')
+            subdomain_query = subdomain.filter(scan_history__id=scan_id).distinct('name')
         elif target_id:
-            subdomain_query = Subdomain.objects.filter(target_domain__id=target_id).distinct('name')
+            subdomain_query = subdomain.filter(target_domain__id=target_id).distinct('name')
         else:
-            subdomain_query = Subdomain.objects.all().distinct('name')
+            subdomain_query = subdomain.all().distinct('name')
 
         if ip_address:
             subdomain_query = subdomain_query.filter(ip_addresses__address=ip_address)
@@ -371,7 +398,10 @@ class ListOsintUsers(APIView):
         req = self.request
         scan_id = req.query_params.get('scan_id')
         if scan_id:
-            documents = MetaFinderDocument.objects.filter(scan_history__id=scan_id).exclude(author__isnull=True).values('author').distinct()
+            scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all())
+            metaFinderDocument = MetaFinderDocument.objects.filter(scan_history__in=scan_history)
+
+            documents = metaFinderDocument.filter(scan_history__id=scan_id).exclude(author__isnull=True).values('author').distinct()
             serializer = MetafinderUserSerializer(documents, many=True)
             return Response({"users": serializer.data})
         raise APIException({"error": "`scan_id` not found in params"})
@@ -382,7 +412,10 @@ class ListMetadata(APIView):
         req = self.request
         scan_id = req.query_params.get('scan_id')
         if scan_id:
-            documents = MetaFinderDocument.objects.filter(scan_history__id=scan_id).distinct()
+            scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all())
+            metaFinderDocument = MetaFinderDocument.objects.filter(scan_history__in=scan_history)
+
+            documents = metaFinderDocument.filter(scan_history__id=scan_id).distinct()
             serializer = MetafinderDocumentSerializer(documents, many=True)
             return Response({"metadata": serializer.data})
         raise APIException({"error": "`scan_id` not found in params"})
@@ -396,17 +429,20 @@ class ListIPs(APIView):
 
         port = req.query_params.get('port')
 
+        scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all())
+        subdomain = Subdomain.objects.filter(scan_history__in=scan_history)
+
         if target_id:
             ips = IpAddress.objects.filter(
-                ip_addresses__in=Subdomain.objects.filter(
+                ip_addresses__in=subdomain.filter(
                     target_domain__id=target_id)).distinct()
         elif scan_id:
             ips = IpAddress.objects.filter(
-                ip_addresses__in=Subdomain.objects.filter(
+                ip_addresses__in=subdomain.filter(
                     scan_history__id=scan_id)).distinct()
         else:
             ips = IpAddress.objects.filter(
-                ip_addresses__in=Subdomain.objects.all()).distinct()
+                ip_addresses__in=subdomain.all()).distinct()
 
         if port:
             ips = ips.filter(
@@ -426,13 +462,17 @@ class IpAddressViewSet(viewsets.ModelViewSet):
         req = self.request
         scan_id = req.query_params.get('scan_id')
 
+        scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all())
+        subdomain = Subdomain.objects.filter(scan_history__in=scan_history)
+        ipaddress = IpAddress.objects.filter(ip_addresses__in=subdomain)
+
         if scan_id:
-            self.queryset = Subdomain.objects.filter(
+            self.queryset = subdomain.filter(
                 scan_history__id=scan_id).exclude(
                 ip_addresses__isnull=True).distinct()
         else:
             self.serializer_class = IpSerializer
-            self.queryset = IpAddress.objects.all()
+            self.queryset = ipaddress.all()
         return self.queryset
 
     def paginate_queryset(self, queryset, view=None):
@@ -448,12 +488,16 @@ class SubdomainsViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         req = self.request
         scan_id = req.query_params.get('scan_id')
+
+        scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all())
+        subdomain = Subdomain.objects.filter(scan_history__in=scan_history)
+
         if scan_id:
             if 'only_screenshot' in self.request.query_params:
-                return Subdomain.objects.filter(
+                return subdomain.filter(
                     scan_history__id=scan_id).exclude(
                     screenshot_path__isnull=True)
-            return Subdomain.objects.filter(scan_history=scan_id)
+            return subdomain.filter(scan_history=scan_id)
 
     def paginate_queryset(self, queryset, view=None):
         if 'no_page' in self.request.query_params:
@@ -475,42 +519,47 @@ class SubdomainChangesViewSet(viewsets.ModelViewSet):
         req = self.request
         scan_id = req.query_params.get('scan_id')
         changes = req.query_params.get('changes')
-        domain_id = ScanHistory.objects.filter(id=scan_id)[0].domain.id
-        scan_history = ScanHistory.objects.filter(
+
+
+        scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all())
+        subdomain = Subdomain.objects.filter(scan_history__in=scan_history)
+
+        domain_id = scan_history.filter(id=scan_id)[0].domain.id
+        scan_history = scan_history.filter(
             domain=domain_id).filter(
             subdomain_discovery=True).filter(
             id__lte=scan_id).filter(
                 scan_status=2)
         if scan_history.count() > 1:
             last_scan = scan_history.order_by('-start_scan_date')[1]
-            scanned_host_q1 = Subdomain.objects.filter(
+            scanned_host_q1 = subdomain.filter(
                 scan_history__id=scan_id).values('name')
-            scanned_host_q2 = Subdomain.objects.filter(
+            scanned_host_q2 = subdomain.filter(
                 scan_history__id=last_scan.id).values('name')
             added_subdomain = scanned_host_q1.difference(scanned_host_q2)
             removed_subdomains = scanned_host_q2.difference(scanned_host_q1)
             if changes == 'added':
-                return Subdomain.objects.filter(
+                return subdomain.filter(
                     scan_history=scan_id).filter(
                     name__in=added_subdomain).annotate(
                     change=Value(
                         'added',
                         output_field=CharField()))
             elif changes == 'removed':
-                return Subdomain.objects.filter(
+                return subdomain.filter(
                     scan_history=last_scan).filter(
                     name__in=removed_subdomains).annotate(
                     change=Value(
                         'removed',
                         output_field=CharField()))
             else:
-                added_subdomain = Subdomain.objects.filter(
+                added_subdomain = subdomain.filter(
                     scan_history=scan_id).filter(
                     name__in=added_subdomain).annotate(
                     change=Value(
                         'added',
                         output_field=CharField()))
-                removed_subdomains = Subdomain.objects.filter(
+                removed_subdomains = subdomain.filter(
                     scan_history=last_scan).filter(
                     name__in=removed_subdomains).annotate(
                     change=Value(
@@ -540,9 +589,11 @@ class EndPointChangesViewSet(viewsets.ModelViewSet):
 
         if scan_id is None and changes is None:
             raise APIException({'error': 'Scan Id and Changes not not provided.'})
+        
+        scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all())
 
-        domain_id = ScanHistory.objects.filter(id=scan_id)[0].domain.id
-        scan_history = ScanHistory.objects.filter(
+        domain_id = scan_history.filter(id=scan_id)[0].domain.id
+        scan_history = scan_history.filter(
             domain=domain_id).filter(
             fetch_url=True).filter(
             id__lte=scan_id).filter(
@@ -601,15 +652,18 @@ class InterestingSubdomainViewSet(viewsets.ModelViewSet):
         scan_id = req.query_params.get('scan_id')
         target_id = req.query_params.get('target_id')
 
+
+        scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all())
+        subdomain = Subdomain.objects.filter(scan_history__in=scan_history)
+
         if 'only_subdomains' in self.request.query_params:
             self.serializer_class = InterestingSubdomainSerializer
         if scan_id:
-            return get_interesting_subdomains(scan_history=scan_id)
+            return get_interesting_subdomains(scan_history=scan_id, subdomain_obj=subdomain)
         elif target_id:
-            queryset = get_interesting_subdomains(target=target_id)
-            return queryset
+            return get_interesting_subdomains(target=target_id, subdomain_obj=subdomain)
         else:
-            return get_interesting_subdomains()
+            return get_interesting_subdomains(subdomain_obj=subdomain)
 
     def paginate_queryset(self, queryset, view=None):
         if 'no_page' in self.request.query_params:
@@ -627,12 +681,16 @@ class InterestingEndpointViewSet(viewsets.ModelViewSet):
         target_id = req.query_params.get('target_id')
         if 'only_endpoints' in self.request.query_params:
             self.serializer_class = InterestingEndPointSerializer
+        
+        scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all())
+        endpoint = EndPoint.objects.filter(scan_history__in=scan_history)
+        
         if scan_id:
-            return get_interesting_endpoint(scan_history=scan_id)
+            return get_interesting_endpoint(scan_history=scan_id, endPoint_obj=endpoint)
         elif target_id:
-            return get_interesting_endpoint(target=target_id)
+            return get_interesting_endpoint(target=target_id, endPoint_obj=endpoint)
         else:
-            return get_interesting_endpoint()
+            return get_interesting_endpoint(endPoint_obj=endpoint)
 
     def paginate_queryset(self, queryset, view=None):
         if 'no_page' in self.request.query_params:
@@ -654,17 +712,21 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 
         ip_address = req.query_params.get('ip_address')
 
+        scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all())
+        subdomain = Subdomain.objects.filter(scan_history__in=scan_history)
+        # endpoint = EndPoint.objects.filter(scan_history__in=scan_history)
+
         if target_id:
-            self.queryset = Subdomain.objects.filter(
+            self.queryset = subdomain.filter(
                 target_domain__id=target_id).distinct()
         elif url_query:
-            self.queryset = Subdomain.objects.filter(
+            self.queryset = subdomain.filter(
                 Q(target_domain__name=url_query)).distinct()
         elif scan_id:
-            self.queryset = Subdomain.objects.filter(
+            self.queryset = subdomain.filter(
                 scan_history__id=scan_id).distinct()
         else:
-            self.queryset = Subdomain.objects.distinct()
+            self.queryset = subdomain.distinct()
 
         if 'only_diretory' in req.query_params:
             self.queryset = self.queryset.exclude(directory_json__isnull=True)
@@ -870,20 +932,24 @@ class EndPointViewSet(viewsets.ModelViewSet):
 
         gf_tag = req.query_params.get(
             'gf_tag') if 'gf_tag' in req.query_params else None
+        
+        scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all())
+        # subdomain = Subdomain.objects.filter(scan_history__in=scan_history)
+        endpoint = EndPoint.objects.filter(scan_history__in=scan_history)
 
         if scan_id:
-            self.queryset = EndPoint.objects.filter(
+            self.queryset = endpoint.filter(
                 scan_history__id=scan_id
             ).distinct()
 
         elif target_id:
-            self.queryset = EndPoint.objects.filter(
+            self.queryset = endpoint.filter(
                 target_domain__id=target_id).distinct()
         else:
-            self.queryset = EndPoint.objects.distinct()
+            self.queryset = endpoint.distinct()
 
         if url_query:
-            self.queryset = EndPoint.objects.filter(
+            self.queryset = endpoint.filter(
                 Q(target_domain__name=url_query)).distinct()
 
         if gf_tag:
@@ -1061,24 +1127,29 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 
         vulnerability_name = req.query_params.get('vulnerability_name')
 
+        scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all())
+        # subdomain = Subdomain.objects.filter(scan_history__in=scan_history)
+        # endpoint = EndPoint.objects.filter(scan_history__in=scan_history)
+        vulnerability = Vulnerability.objects.filter(scan_history__in=scan_history)
+
         if scan_id:
-            self.queryset = Vulnerability.objects.filter(
+            self.queryset = vulnerability.filter(
                 scan_history__id=scan_id).distinct()
 
         elif target_id:
-            self.queryset = Vulnerability.objects.filter(
+            self.queryset = vulnerability.filter(
                 target_domain__id=target_id).distinct()
 
         elif domain:
-            self.queryset = Vulnerability.objects.filter(
+            self.queryset = vulnerability.filter(
                 Q(target_domain__name=domain)).distinct()
 
         elif vulnerability_name:
-            self.queryset = Vulnerability.objects.filter(
+            self.queryset = vulnerability.filter(
                 Q(name=vulnerability_name)).distinct()
 
         else:
-            self.queryset = Vulnerability.objects.distinct()
+            self.queryset = vulnerability.distinct()
 
 
         return self.queryset

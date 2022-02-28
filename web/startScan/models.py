@@ -1,4 +1,5 @@
 import datetime
+from typing import Any
 
 from django.db import models
 from django.db.models import JSONField
@@ -9,6 +10,21 @@ from django.apps import apps
 
 from targetApp.models import Domain
 from scanEngine.models import EngineType
+from targetApp.middleware import local
+
+
+class ScanHistoryModelManager(models.Manager):
+    def get_queryset(self):
+        domains = Domain.objects.all()
+        return super().get_queryset().filter(domain__in=domains)
+    
+    def filter(self, *args: Any, **kwargs: Any):
+        return self.get_queryset().filter(*args, **kwargs)
+        return super().filter(*args, **kwargs)
+    
+    def all(self):
+        return self.get_queryset().all()
+        return super().all()
 
 
 class ScanHistory(models.Model):
@@ -33,6 +49,8 @@ class ScanHistory(models.Model):
     emails = models.ManyToManyField('Email', related_name='emails')
     employees = models.ManyToManyField('Employee', related_name='employees')
     dorks = models.ManyToManyField('Dork', related_name='dorks')
+
+    objects = ScanHistoryModelManager
 
     def __str__(self):
         # debug purpose remove scan type and id in prod
@@ -111,6 +129,20 @@ class ScanHistory(models.Model):
         return '{} hours {} minutes'.format(hours, minutes)
 
 
+class ScanHistoryBasedModel(models.Manager):
+    def get_queryset(self):
+        domains = Domain.objects.all()
+        scan_history = ScanHistory.objects.filter(domain__in=domains)
+        return super().get_queryset().filter(scan_history__in=scan_history)
+    
+    def filter(self, *args: Any, **kwargs: Any):
+        return self.get_queryset().filter(*args, **kwargs)
+        return super().filter(*args, **kwargs)
+    
+    def all(self):
+        return self.get_queryset().all()
+        return super().all()
+
 class Subdomain(models.Model):
     id = models.AutoField(primary_key=True)
     scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
@@ -135,6 +167,8 @@ class Subdomain(models.Model):
     page_title = models.CharField(max_length=1000, blank=True, null=True)
     technologies = models.ManyToManyField('Technology', related_name='technologies')
     ip_addresses = models.ManyToManyField('IPAddress', related_name='ip_addresses')
+
+    objects = ScanHistoryBasedModel
 
     def __str__(self):
         return str(self.name)
@@ -210,6 +244,8 @@ class EndPoint(models.Model):
     matched_gf_patterns = models.CharField(max_length=2000, null=True, blank=True)
     technologies = models.ManyToManyField('Technology', related_name='technology')
 
+    objects = ScanHistoryBasedModel
+
     def __str__(self):
         return self.http_url
 
@@ -243,12 +279,22 @@ class Vulnerability(models.Model):
     open_status = models.BooleanField(null=True, blank=True, default=True)
     hackerone_report_id = models.CharField(max_length=50, null=True, blank=True)
 
+    objects = ScanHistoryBasedModel
+
+
     def __str__(self):
         return self.name
 
     def get_severity(self):
         return self.severity
 
+
+
+class ScanActivityModel(models.Manager):
+    def get_queryset(self):
+        domains = Domain.objects.all()
+        scan_of = ScanHistory.objects.filter(domain__in=domains)
+        return super().get_queryset().filter(scan_of__in=scan_of)
 
 class ScanActivity(models.Model):
     id = models.AutoField(primary_key=True)
@@ -309,6 +355,9 @@ class MetaFinderDocument(models.Model):
     http_status = models.IntegerField(default=0, null=True, blank=True)
     creation_date = models.CharField(max_length=1000, blank=True, null=True)
     modified_date = models.CharField(max_length=1000, blank=True, null=True)
+
+    objects = ScanHistoryBasedModel
+
 
 
 class Email(models.Model):

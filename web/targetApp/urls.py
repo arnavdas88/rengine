@@ -1,9 +1,18 @@
 from django.contrib import admin
 from django.urls import path, include
-from . import views
+from . import views, api
+
+from django.urls import path
+from rest_framework.urlpatterns import format_suffix_patterns
 
 
-urlpatterns = [
+
+urlpatterns = format_suffix_patterns([
+    path('api/target/', api.Target.as_view()),
+    # path('api/organization/', api.Organization.as_view()),
+])
+
+urlpatterns += [
     path(
         '',
         views.index,

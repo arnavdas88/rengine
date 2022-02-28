@@ -11,7 +11,10 @@ NULL_AND_BLANK = {'null': True, 'blank': True}
 
 class ModelManager(models.Manager):
     def get_queryset(self):
-        return super().get_queryset().filter(creator=local.user)
+        if hasattr(local, 'user'):
+            return super().get_queryset().filter(creator=local.user)
+        else:
+            return super().get_queryset()
 
 class BaseModel(models.Model):
     created = models.DateTimeField(default=timezone.now)

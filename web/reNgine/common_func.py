@@ -28,7 +28,7 @@ def get_lookup_keywords():
     return lookup_keywords
 
 
-def get_interesting_subdomains(scan_history=None, target=None):
+def get_interesting_subdomains(scan_history=None, target=None, subdomain_obj=None):
     lookup_keywords = get_lookup_keywords()
 
     subdomain_lookup_query = Q()
@@ -57,28 +57,31 @@ def get_interesting_subdomains(scan_history=None, target=None):
     subdomain_lookup = Subdomain.objects.none()
     title_lookup = Subdomain.objects.none()
 
+    if subdomain_obj is None:
+        subdomain_obj = Subdomain.objects.all()
+
     if target:
-        subdomains = Subdomain.objects.filter(target_domain__id=target).distinct('name')
+        subdomains = subdomain_obj.filter(target_domain__id=target).distinct('name')
         if subdomain_lookup_query:
             subdomain_lookup = subdomains.filter(subdomain_lookup_query)
         if page_title_lookup_query:
             title_lookup = subdomains.filter(page_title_lookup_query)
     elif scan_history:
-        subdomains = Subdomain.objects.filter(scan_history__id=scan_history)
+        subdomains = subdomain_obj.filter(scan_history__id=scan_history)
         if subdomain_lookup_query:
             subdomain_lookup = subdomains.filter(subdomain_lookup_query)
         if page_title_lookup_query:
             title_lookup = subdomains.filter(page_title_lookup_query)
     else:
         if subdomain_lookup_query:
-            subdomain_lookup = Subdomain.objects.filter(subdomain_lookup_query)
+            subdomain_lookup = subdomain_obj.filter(subdomain_lookup_query)
         if page_title_lookup_query:
-            title_lookup = Subdomain.objects.filter(page_title_lookup_query)
+            title_lookup = subdomain_obj.filter(page_title_lookup_query)
     lookup = subdomain_lookup | title_lookup
     return lookup
 
 
-def get_interesting_endpoint(scan_history=None, target=None):
+def get_interesting_endpoint(scan_history=None, target=None, endPoint_obj = None):
     lookup_keywords = get_lookup_keywords()
 
     url_lookup_query = Q()
@@ -102,14 +105,17 @@ def get_interesting_endpoint(scan_history=None, target=None):
     url_lookup = EndPoint.objects.none()
     title_lookup = EndPoint.objects.none()
 
+    if endPoint_obj is None:
+        endPoint_obj = EndPoint.objects.all()
+
     if target:
-        urls = EndPoint.objects.filter(target_domain__id=target).distinct('http_url')
+        urls = endPoint_obj.filter(target_domain__id=target).distinct('http_url')
         if url_lookup_query:
             url_lookup = urls.filter(url_lookup_query)
         if page_title_lookup_query:
             title_lookup = urls.filter(page_title_lookup_query)
     elif scan_history:
-        urls = EndPoint.objects.filter(scan_history__id=scan_history)
+        urls = endPoint_obj.filter(scan_history__id=scan_history)
         if url_lookup_query:
             url_lookup = urls.filter(url_lookup_query)
         if page_title_lookup_query:
@@ -117,9 +123,9 @@ def get_interesting_endpoint(scan_history=None, target=None):
 
     else:
         if url_lookup_query:
-            url_lookup = EndPoint.objects.filter(url_lookup_query)
+            url_lookup = endPoint_obj.filter(url_lookup_query)
         if page_title_lookup_query:
-            title_lookup = EndPoint.objects.filter(page_title_lookup_query)
+            title_lookup = endPoint_obj.filter(page_title_lookup_query)
 
     return url_lookup | title_lookup
 
