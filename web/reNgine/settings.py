@@ -39,9 +39,37 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'mathfilters',
     'drf_yasg',
+    'corsheaders',
+]
+
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    # r"^https:\/\/\w+\.zeron\.one$",
+    # r"^http:\/\/\w+\.zeron\.one$",
+    r"http://*",
+    r"https://*"
+]
+
+CORS_ORIGIN_WHITELIST = [
+    'https://dev.zeron.one',
+]
+
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_METHODS = [
+    'GET',
+    'POST',
+    'PUT',
+    'PATCH',
+    'DELETE',
+    'OPTIONS'
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware",
+
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -52,6 +80,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     'targetApp.middleware.BaseMiddleware',
+
+
 ]
 
 ROOT_URLCONF = 'reNgine.urls'
@@ -174,3 +204,4 @@ CELERY_ENABLE_UTC = False
 CELERY_TIMEZONE = 'UTC'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+

@@ -162,8 +162,8 @@ volumes:
 
 secrets:
   proxy.ca:
-    file: ./secrets/certs/rengine_chain.pem
+    file: ./secrets/certs/zeron.one-0001/fullchain.pem
   proxy.key:
-    file: ./secrets/certs/rengine_rsa.key
+    file: ./secrets/certs/zeron.one-0001/privkey.pem
   proxy.cert:
-    file: ./secrets/certs/rengine.pem
+    file: ./secrets/certs/zeron.one-0001/cert.pem
