@@ -226,7 +226,7 @@ class ListTechnology(APIView):
         scan_id = req.query_params.get('scan_id')
         target_id = req.query_params.get('target_id')
 
-        scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all()).order_by('-start_scan_date')
+        scan_history = ScanHistory.objects.filter(domain__in = Domain.objects.all())
         tech = Technology.objects.filter(
                 technologies__in=Subdomain.objects.filter(
                     scan_history__in=scan_history))

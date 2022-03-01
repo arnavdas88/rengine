@@ -1,8 +1,48 @@
 from django.contrib import admin
 from django.urls import path, include
 from . import views
+from . import api
 
 urlpatterns = [
+    path(
+        'api/history/',
+        api.scan_history,
+        name="api_scan_history"),
+    path(
+        'api/detail/<int:id>',
+        api.detail_scan,
+        name='api_detail_scan'),
+    path(
+        'api/all/subdomains',
+        api.all_subdomains,
+        name='api_all_subdomains'),
+    path(
+        'api/detail/vuln/<int:id>',
+        api.detail_vuln_scan,
+        name='api_detail_vuln_scan'),
+    path(
+        'api/detail/vuln',
+        api.detail_vuln_scan,
+        name='api_all_vulns'),
+    path(
+        'api/visualise/<int:id>',
+        api.visualise,
+        name='api_visualise'),
+    path(
+        'api/start/<int:domain_id>',
+        api.start_scan_ui,
+        name='api_start_scan'),
+    path(
+        'api/start/multiple/',
+        api.start_multiple_scan,
+        name='api_start_multiple_scan'),
+    path(
+        'api/start/organization/<int:id>',
+        api.start_organization_scan,
+        name='api_start_organization_scan'),
+]
+
+urlpatterns += [
     path(
         'history/',
         views.scan_history,

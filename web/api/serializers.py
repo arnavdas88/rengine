@@ -5,6 +5,8 @@ from targetApp.models import *
 from scanEngine.models import *
 from recon_note.models import *
 
+from django_celery_beat.models import PeriodicTask
+
 from django.db.models import F, JSONField, Value
 
 
@@ -43,11 +45,23 @@ class ScanHistorySerializer(serializers.ModelSerializer):
         fields = '__all__'
         depth = 1
 
+class ScanActivitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ScanActivity
+        fields = '__all__'
+        depth = 1
 
 class OrganizationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Organization
+        fields = '__all__'
+
+
+class PeriodicTaskSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = PeriodicTask
         fields = '__all__'
 
 
@@ -65,6 +79,12 @@ class OrganizationTargetsSerializer(serializers.ModelSerializer):
         fields = [
             'name'
         ]
+
+class DomainSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Domain
+        fields = '__all__'
 
 
 class VisualiseVulnerabilitySerializer(serializers.ModelSerializer):
