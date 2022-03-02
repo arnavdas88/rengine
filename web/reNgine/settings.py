@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'rest_framework',
     'rest_framework_datatables',
+    'rest_framework.authtoken',
     'dashboard.apps.DashboardConfig',
     'targetApp.apps.TargetappConfig',
     'scanEngine.apps.ScanengineConfig',
@@ -75,7 +76,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'login_required.middleware.LoginRequiredMiddleware',
+    # 'login_required.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
@@ -119,7 +120,14 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS':
         'rest_framework_datatables.pagination.DatatablesPageNumberPagination',
     'PAGE_SIZE': 50,
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+    	'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],   
 }
+
+AUTHENTICATION_BACKENDS = ['reNgine.backends.EmailBackend']
 
 DATABASES = {
     'default': {
@@ -184,8 +192,16 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
 
+# LOGIN_REQUIRED_IGNORE_PATHS = [
+#     r'/api-token-auth$',
+#     r'/api-register$',
+#     r'/login$',
+# ]
+
 LOGIN_REQUIRED_IGNORE_VIEW_NAMES = [
     'login',
+    'auth_login',
+    'auth_register'
 ]
 
 LOGIN_URL = 'login'

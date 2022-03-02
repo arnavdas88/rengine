@@ -5,6 +5,10 @@ from . import api
 
 urlpatterns = [
     path(
+        'api/dashboard/',
+        api.dashboard,
+        name="api_dashboard"),
+    path(
         'api/history/',
         api.scan_history,
         name="api_scan_history"),

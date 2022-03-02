@@ -3,6 +3,8 @@ import json
 from django.shortcuts import render
 from django.http import JsonResponse
 
+from django.views.decorators.csrf import csrf_exempt
+
 from recon_note.models import *
 from startScan.models import *
 
@@ -11,7 +13,7 @@ def list_note(request):
     context['recon_note_active'] = 'active'
     return render(request, 'note/index.html', context)
 
-
+@csrf_exempt
 def add_note(request):
     if request.method == "POST":
         body_unicode = request.body.decode('utf-8')
@@ -34,6 +36,7 @@ def add_note(request):
 
     return JsonResponse({'status': True})
 
+@csrf_exempt
 def flip_todo_status(request):
     if request.method == "POST":
         body_unicode = request.body.decode('utf-8')
@@ -45,6 +48,7 @@ def flip_todo_status(request):
 
     return JsonResponse({'status': True})
 
+@csrf_exempt
 def flip_important_status(request):
     if request.method == "POST":
         body_unicode = request.body.decode('utf-8')
@@ -56,6 +60,7 @@ def flip_important_status(request):
 
     return JsonResponse({'status': True})
 
+@csrf_exempt
 def delete_note(request):
     if request.method == "POST":
         body_unicode = request.body.decode('utf-8')

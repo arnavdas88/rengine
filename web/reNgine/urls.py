@@ -54,10 +54,16 @@ urlpatterns = [
         'api/',
         include(
             'api.urls',
-            'api')),
+            'api'), name='base-api'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + \
     static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 urlpatterns += [
     path('api-auth/', include('rest_framework.urls')),
+]
+from rest_framework.authtoken import views as authtoken_views
+from .auth.viewset import RegisterView
+urlpatterns += [
+    path('api-token-auth/', authtoken_views.obtain_auth_token, name='auth_login'),
+    path('api-register/', RegisterView.as_view(), name='auth_register')
 ]
