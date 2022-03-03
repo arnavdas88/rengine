@@ -10,7 +10,7 @@ from reNgine.common_func import *
 class TargetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Domain
-        fields = ['name', 'h1_team_handle', 'description']
+        fields = ['id', 'name', 'h1_team_handle', 'description']
     
     def validate(self, attrs):
         name = attrs['name']

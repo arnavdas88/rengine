@@ -38,22 +38,22 @@ class Target(APIView):
     """
 
     authentication_classes = [authentication.TokenAuthentication]
-    # def get(self, request, format=None):
-    #     snippets = Snippet.objects.all()
-    #     serializer = SnippetSerializer(snippets, many=True)
-    #     return Response(serializer.data)
+    def get(self, request, format=None):
+        target = Domain.objects.all()
+        serializer = TargetSerializer(target, many=True)
+        return JsonResponse(serializer.data, safe=False)
 
     def post(self, request, format=None):
-        add_target_form = TargetSerializer(request.data or None)
+        add_target_form = TargetSerializer(data=request.data or None)
 
         if add_target_form.is_valid(raise_exception=True):
             Domain.objects.create(
-                **add_target_form.cleaned_data,
+                **add_target_form.validated_data ,
                 insert_date=timezone.now())
             messages.add_message(
                 request,
                 messages.INFO,
                 'Target domain ' +
-                add_target_form.cleaned_data['name'] +
+                add_target_form.validated_data['name'] +
                 ' added successfully')
             return JsonResponse({'status':'success'})
