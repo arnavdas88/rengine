@@ -634,6 +634,26 @@ class EndpointOnlyURLsSerializer(serializers.ModelSerializer):
         model = EndPoint
         fields = ['http_url']
 
+class VulnerabilityReadonlySerializer(serializers.ModelSerializer):
+    name = serializers.CharField()
+    severity = serializers.SerializerMethodField()
+
+    def get_severity(self, Vulnerability):
+        if Vulnerability.severity == 0:
+            return "Info"
+        elif Vulnerability.severity == 1:
+            return "Low"
+        elif Vulnerability.severity == 2:
+            return "Medium"
+        elif Vulnerability.severity == 3:
+            return "High"
+        elif Vulnerability.severity == 4:
+            return "Critical"
+    class Meta:
+        model = Vulnerability
+        fields = ['name', 'severity']
+        # fields = '__all__'
+        # exclude = [ ]
 
 class VulnerabilitySerializer(serializers.ModelSerializer):
 

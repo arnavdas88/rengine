@@ -26,6 +26,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
+from rest_framework.response import Response
+from rest_framework import authentication, permissions
+
 from targetApp.serializers import *
 
 
@@ -33,6 +36,8 @@ class Target(APIView):
     """
     List all snippets, or create a new snippet.
     """
+
+    authentication_classes = [authentication.TokenAuthentication]
     # def get(self, request, format=None):
     #     snippets = Snippet.objects.all()
     #     serializer = SnippetSerializer(snippets, many=True)
@@ -41,7 +46,7 @@ class Target(APIView):
     def post(self, request, format=None):
         add_target_form = TargetSerializer(request.data or None)
 
-        if 'add-target' in request.data and add_target_form.is_valid():
+        if add_target_form.is_valid(raise_exception=True):
             Domain.objects.create(
                 **add_target_form.cleaned_data,
                 insert_date=timezone.now())
@@ -51,9 +56,4 @@ class Target(APIView):
                 'Target domain ' +
                 add_target_form.cleaned_data['name'] +
                 ' added successfully')
-            return JsonResponse({})
-        context = {
-            "add_target_li": "active",
-            "target_data_active": "active",
-            'form': add_target_form}
-        return render(request, 'target/add.html', context)
+            return JsonResponse({'status':'success'})

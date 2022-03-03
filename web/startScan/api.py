@@ -161,7 +161,7 @@ def dashboard(request):
         'critical_count': critical_count,
 
         'most_vulnerable_target': DomainSerializer(most_vulnerable_target, many=True).data,
-        'most_common_vulnerability': VulnerabilitySerializer(most_common_vulnerability, many=True).data,
+        'most_common_vulnerability': most_common_vulnerability,
 
         'total_vul_count': total_vul_count,
 
@@ -354,7 +354,7 @@ def create_scan_object(host_id, engine_type):
     return Response(task.id)
 
 # POST
-@api_view()
+@api_view(['GET', 'POST'])
 @authentication_classes([SessionAuthentication, BasicAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def start_scan_ui(request, domain_id):
@@ -399,7 +399,7 @@ def start_scan_ui(request, domain_id):
     return Response(context)
 
 # POST
-@api_view()
+@api_view(['GET', 'POST'])
 @authentication_classes([SessionAuthentication, BasicAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def start_multiple_scan(request):
@@ -449,7 +449,7 @@ def start_multiple_scan(request):
     return Response(context)
 
 # POST
-@api_view()
+@api_view(['GET', 'POST'])
 @authentication_classes([SessionAuthentication, BasicAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def start_organization_scan(request, id):
