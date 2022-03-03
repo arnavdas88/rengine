@@ -271,7 +271,7 @@ def detail_scan(request, id=None):
             scan_history = ScanHistory.objects.filter(domain=domain_id).filter(subdomain_discovery=True).filter(id__lte=id).filter(scan_status=2)
             if scan_history.count() > 1:
                 last_scan = scan_history.order_by('-start_scan_date')[1]
-                context['last_scan'] = last_scan
+                context['last_scan'] = ScanHistorySerializer(last_scan).data
 
     # badge count for gfs
     if history.used_gf_patterns:
